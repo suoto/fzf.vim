@@ -39,29 +39,56 @@ function! s:defs(commands)
   endfor
 endfunction
 
+" Files       call fzf#vim#files(<q-args>, <bang>0)',
+" GitFiles                  call fzf#vim#gitfiles(<q-args>, <bang>0)',
+" GFiles                    call fzf#vim#gitfiles(<q-args>, <bang>0)',
+" Buffers  call fzf#vim#buffers(<q-args>, <bang>0)',
+" Lines                     call fzf#vim#lines(<q-args>, <bang>0)',
+" BLines                    call fzf#vim#buffer_lines(<q-args>, <bang>0)',
+" Colors                             call fzf#vim#colors(<bang>0)',
+" Locate      call fzf#vim#locate(<q-args>, <bang>0)',
+" Ag                        call fzf#vim#ag(<q-args>, <bang>0)',
+" Rg                        call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, <bang>0)',
+" Tags                      call fzf#vim#tags(<q-args>, <bang>0)',
+" BTags                     call fzf#vim#buffer_tags(<q-args>, <bang>0)',
+" Snippets                           call fzf#vim#snippets(<bang>0)',
+" Commands                           call fzf#vim#commands(<bang>0)',
+" Marks                              call fzf#vim#marks(<bang>0)',
+" Helptags                           call fzf#vim#helptags(<bang>0)',
+" Windows                            call fzf#vim#windows(<bang>0)',
+" Commits                            call fzf#vim#commits(<bang>0)',
+" BCommits                           call fzf#vim#buffer_commits(<bang>0)',
+" Maps                               call fzf#vim#maps("n", <bang>0)',
+" Filetypes                          call fzf#vim#filetypes(<bang>0)',
+" History                   call s:history(<q-args>, <bang>0)'])
+
+" let s:command_map = get(g:, 'fzf_command_map', {
+
+" })
+
 call s:defs([
-\'command!      -bang -nargs=? -complete=dir SearchFiles       call fzf#vim#files(<q-args>, <bang>0)',
-\'command!      -bang -nargs=? SearchGitFiles                  call fzf#vim#gitfiles(<q-args>, <bang>0)',
-\'command!      -bang -nargs=? SearchGFiles                    call fzf#vim#gitfiles(<q-args>, <bang>0)',
-\'command! -bar -bang -nargs=? -complete=buffer SearchBuffers  call fzf#vim#buffers(<q-args>, <bang>0)',
-\'command!      -bang -nargs=* SearchLines                     call fzf#vim#lines(<q-args>, <bang>0)',
-\'command!      -bang -nargs=* SearchBLines                    call fzf#vim#buffer_lines(<q-args>, <bang>0)',
-\'command! -bar -bang SearchColors                             call fzf#vim#colors(<bang>0)',
-\'command!      -bang -nargs=+ -complete=dir SearchLocate      call fzf#vim#locate(<q-args>, <bang>0)',
-\'command!      -bang -nargs=* SearchAg                        call fzf#vim#ag(<q-args>, <bang>0)',
-\'command!      -bang -nargs=* SearchRg                        call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, <bang>0)',
-\'command!      -bang -nargs=* SearchTags                      call fzf#vim#tags(<q-args>, <bang>0)',
-\'command!      -bang -nargs=* SearchBTags                     call fzf#vim#buffer_tags(<q-args>, <bang>0)',
-\'command! -bar -bang SearchSnippets                           call fzf#vim#snippets(<bang>0)',
-\'command! -bar -bang SearchCommands                           call fzf#vim#commands(<bang>0)',
-\'command! -bar -bang SearchMarks                              call fzf#vim#marks(<bang>0)',
-\'command! -bar -bang SearchHelptags                           call fzf#vim#helptags(<bang>0)',
-\'command! -bar -bang SearchWindows                            call fzf#vim#windows(<bang>0)',
-\'command! -bar -bang SearchCommits                            call fzf#vim#commits(<bang>0)',
-\'command! -bar -bang SearchBCommits                           call fzf#vim#buffer_commits(<bang>0)',
-\'command! -bar -bang SearchMaps                               call fzf#vim#maps("n", <bang>0)',
-\'command! -bar -bang SearchFiletypes                          call fzf#vim#filetypes(<bang>0)',
-\'command!      -bang -nargs=* SearchHistory                   call s:history(<q-args>, <bang>0)'])
+\'command!      -bang -nargs=? -complete=dir    FSearch              call fzf#vim#files(<q-args>, <bang>0)',
+\'command!      -bang -nargs=*                  FSearchAg            call fzf#vim#ag(<q-args>, <bang>0)',
+\'command! -bar -bang -nargs=? -complete=buffer FSearchBuffer        call fzf#vim#buffers(<q-args>, <bang>0)',
+\'command! -bar -bang                           FSearchBufferCommits call fzf#vim#buffer_commits(<bang>0)',
+\'command!      -bang -nargs=*                  FSearchBufferLines   call fzf#vim#buffer_lines(<q-args>, <bang>0)',
+\'command! -bar -bang                           FSearchColors        call fzf#vim#colors(<bang>0)',
+\'command! -bar -bang                           FSearchCommands      call fzf#vim#commands(<bang>0)',
+\'command! -bar -bang                           FSearchCommits       call fzf#vim#commits(<bang>0)',
+\'command! -bar -bang                           FSearchFiletypes     call fzf#vim#filetypes(<bang>0)',
+\'command!      -bang -nargs=?                  FSearchGitFiles      call fzf#vim#gitfiles(<q-args>, <bang>0)',
+\'command! -bar -bang                           FSearchHelptags      call fzf#vim#helptags(<bang>0)',
+\'command!      -bang -nargs=*                  FSearchHistory       call s:history(<q-args>, <bang>0)',
+\'command!      -bang -nargs=*                  FSearchLines         call fzf#vim#lines(<q-args>, <bang>0)',
+\'command! -bar -bang                           FSearchMaps          call fzf#vim#maps("n", <bang>0)',
+\'command! -bar -bang                           FSearchMarks         call fzf#vim#marks(<bang>0)',
+\'command!      -bang -nargs=*                  FSearchRg            call fzf#vim#grep("rg --column --line-number --no-heading --color=always --smart-case ".shellescape(<q-args>), 1, <bang>0)',
+\'command! -bar -bang                           FSearchSnippets      call fzf#vim#snippets(<bang>0)',
+\'command!      -bang -nargs=*                  FSearchTags          call fzf#vim#tags(<q-args>, <bang>0)',
+\'command!      -bang -nargs=*                  FSearchTagsBuffer    call fzf#vim#buffer_tags(<q-args>, <bang>0)',
+\'command! -bar -bang                           FSearchWindows       call fzf#vim#windows(<bang>0)',
+\'command!      -bang -nargs=+ -complete=dir    FLocate              call fzf#vim#locate(<q-args>, <bang>0)',
+\])
 
 function! s:history(arg, bang)
   let bang = a:bang || a:arg[len(a:arg)-1] == '!'

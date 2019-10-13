@@ -528,22 +528,31 @@ endfunction
 " GFiles[?]
 " ------------------------------------------------------------------
 
-function! s:get_git_root()
-  let root = split(system('git rev-parse --show-toplevel'), '\n')[0]
+function! s:get_git_root(dir)
+  let root = split(system('git -C "' . a:dir . '" rev-parse --show-toplevel'), '\n')[0]
   return v:shell_error ? '' : root
 endfunction
 
 function! fzf#vim#gitfiles(args, ...)
-  let root = s:get_git_root()
-  if empty(root)
+    return fzf#vim#SearchGitFilesOnPath(getcwd(), a:args, a:)
+endfunction
+
+function! fzf#vim#SearchGitFilesOnPath(dir, args, ...)
+  let l:root = s:get_git_root(a:dir)
+  if empty(l:root)
     return s:warn('Not in git repo')
   endif
   if a:args != '?'
-    return s:fzf('gfiles', {
-    \ 'source':  'git ls-files '.a:args.(s:is_win ? '' : ' | uniq'),
-    \ 'dir':     root,
-    \ 'options': '-m --prompt "GitFiles> "'
-    \}, a:000)
+    return s:fzf(
+    \   'gfiles', 
+    \   {
+    \       'source':
+    \           'git -C "' . l:root . '" ls-files --recurse-submodules '
+    \           .a:args.(s:is_win ? '' : ' | uniq'),
+    \       'dir':     l:root,
+    \       'options': '-m --prompt "GitFiles(' . l:root . ')> "'
+    \   },
+    \   a:000)
   endif
 
   " Here be dragons!
@@ -551,7 +560,7 @@ function! fzf#vim#gitfiles(args, ...)
   " the options dictionary.
   let wrapped = fzf#wrap({
   \ 'source':  'git -c color.status=always status --short --untracked-files=all',
-  \ 'dir':     root,
+  \ 'dir':     l:root,
   \ 'options': ['--ansi', '--multi', '--nth', '2..,..', '--tiebreak=index', '--prompt', 'GitFiles?> ', '--preview', 'sh -c "(git diff --color=always -- {-1} | sed 1,4d; cat {-1}) | head -500"']
   \})
   call s:remove_layout(wrapped)
@@ -1095,7 +1104,7 @@ function! s:commits_sink(lines)
 endfunction
 
 function! s:commits(buffer_local, args)
-  let s:git_root = s:get_git_root()
+  let s:git_root = s:get_git_root(getcwd())
   if empty(s:git_root)
     return s:warn('Not in git repository')
   endif
@@ -1316,6 +1325,61 @@ function! fzf#vim#complete(...)
 
   call feedkeys("\<Plug>(-fzf-complete-trigger)")
   return ''
+endfunction
+
+" ------------------------------------------------------------------
+" Trying to be smart
+" ------------------------------------------------------------------
+function! fzf#vim#isGitRepo(dir)
+    let l:git_root = systemlist('git -C ' . a:dir . ' rev-parse --show-toplevel')
+    if v:shell_error
+        return 0
+    endif
+
+    return 1
+endfunction
+
+function! fzf#vim#gitGetSuperprojectWorkingTree(dir)
+    let l:root = systemlist('git -C ' . a:dir . ' rev-parse ' 
+    \ . '--show-superproject-working-tree')
+
+    if v:shell_error || empty(l:root)
+        return ''
+    endif
+
+    return l:root[0]
+endfunction
+
+function! fzf#vim#smart(...)
+    " Bang means searching of the parent repo if the current repo is a
+    " submodule
+    let l:bang = a:1
+    let l:dir = a:2
+
+    if !empty(l:dir)
+        return fzf#vim#files(l:dir, a:)
+    endif
+
+    let l:dir = expand('#' . bufnr() . ':p:h')
+
+    " No buffer open
+    if empty(l:dir)
+        let l:dir = getcwd()
+    endif
+
+    if l:bang 
+        let l:superproject_root = fzf#vim#gitGetSuperprojectWorkingTree(l:dir)
+        if !empty(l:superproject_root)
+            return fzf#vim#SearchGitFilesOnPath(l:superproject_root, '', a:)
+        endif
+    endif
+
+    if fzf#vim#isGitRepo(l:dir)
+        return fzf#vim#SearchGitFilesOnPath(l:dir, '', a:)
+    endif
+
+    return fzf#vim#files(l:dir, a:)
+
 endfunction
 
 " ------------------------------------------------------------------

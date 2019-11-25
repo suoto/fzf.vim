@@ -1330,13 +1330,13 @@ endfunction
 " ------------------------------------------------------------------
 " Trying to be smart
 " ------------------------------------------------------------------
-function! fzf#vim#isGitRepo(dir)
+function! fzf#vim#getGitRoot(dir)
     let l:git_root = systemlist('git -C ' . a:dir . ' rev-parse --show-toplevel')
-    if v:shell_error
-        return 0
+    if v:shell_error || empty(l:git_root)
+        return ''
     endif
 
-    return 1
+    return l:git_root[0]
 endfunction
 
 function! fzf#vim#gitGetSuperprojectWorkingTree(dir)
@@ -1370,12 +1370,14 @@ function! fzf#vim#smart(...)
     if l:bang 
         let l:superproject_root = fzf#vim#gitGetSuperprojectWorkingTree(l:dir)
         if !empty(l:superproject_root)
-            return fzf#vim#SearchGitFilesOnPath(l:superproject_root, '', a:)
+            " return fzf#vim#SearchGitFilesOnPath(l:superproject_root, '', a:)
+            return fzf#vim#files(l:superproject_root, a:)
         endif
     endif
 
-    if fzf#vim#isGitRepo(l:dir)
-        return fzf#vim#SearchGitFilesOnPath(l:dir, '', a:)
+    let l:git_root = fzf#vim#getGitRoot(l:dir)
+    if !empty(glob(l:git_root))
+        let l:dir = l:git_root
     endif
 
     return fzf#vim#files(l:dir, a:)

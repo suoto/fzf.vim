@@ -21,8 +21,8 @@
 " OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 " WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-let s:cpo_save = &cpo
-set cpo&vim
+let s:cpo_save = &cpoptions
+set cpoptions&vim
 
 " ------------------------------------------------------------------
 " Common
@@ -51,7 +51,7 @@ function! s:extend_opts(dict, eopts, prepend)
     return
   endif
   if has_key(a:dict, 'options')
-    if type(a:dict.options) == s:TYPE.list && type(a:eopts) == s:TYPE.list
+    if type(a:dict.options) ==? s:TYPE.list && type(a:eopts) ==? s:TYPE.list
       if a:prepend
         let a:dict.options = extend(copy(a:eopts), a:dict.options)
       else
@@ -59,7 +59,7 @@ function! s:extend_opts(dict, eopts, prepend)
       endif
     else
       let all_opts = a:prepend ? [a:eopts, a:dict.options] : [a:dict.options, a:eopts]
-      let a:dict.options = join(map(all_opts, 'type(v:val) == s:TYPE.list ? join(map(copy(v:val), "fzf#shellescape(v:val)")) : v:val'))
+      let a:dict.options = join(map(all_opts, 'type(v:val) ==? s:TYPE.list ? join(map(copy(v:val), "fzf#shellescape(v:val)")) : v:val'))
     endif
   else
     let a:dict.options = a:eopts
@@ -83,13 +83,13 @@ function! fzf#vim#with_preview(...)
   let args = copy(a:000)
 
   " Options to wrap
-  if len(args) && type(args[0]) == s:TYPE.dict
+  if len(args) && type(args[0]) ==? s:TYPE.dict
     let options = copy(args[0])
     call remove(args, 0)
   endif
 
   " Preview window
-  if len(args) && type(args[0]) == s:TYPE.string
+  if len(args) && type(args[0]) ==? s:TYPE.string
     if args[0] !~# '^\(up\|down\|left\|right\)'
       throw 'invalid preview window: '.args[0]
     endif
@@ -120,9 +120,9 @@ function! s:wrap(name, opts, bang)
   let opts = copy(a:opts)
   let options = ''
   if has_key(opts, 'options')
-    let options = type(opts.options) == s:TYPE.list ? join(opts.options) : opts.options
+    let options = type(opts.options) ==? s:TYPE.list ? join(opts.options) : opts.options
   endif
-  if options !~ '--expect' && has_key(opts, 'sink*')
+  if options !~? '--expect' && has_key(opts, 'sink*')
     let Sink = remove(opts, 'sink*')
     let wrapped = fzf#wrap(a:name, opts, a:bang)
     let wrapped['sink*'] = Sink
@@ -169,11 +169,20 @@ function! s:get_color(attr, ...)
   return ''
 endfunction
 
+" Create defaults
+let s:black = 30
+let s:red = 31
+let s:green = 32
+let s:yellow = 33
+let s:blue = 34
+let s:magenta = 35
+let s:cyan = 36
+
 let s:ansi = {'black': 30, 'red': 31, 'green': 32, 'yellow': 33, 'blue': 34, 'magenta': 35, 'cyan': 36}
 
 function! s:csi(color, fg)
   let prefix = a:fg ? '38;' : '48;'
-  if a:color[0] == '#'
+  if a:color[0] ==? '#'
     return prefix.'2;'.join(map([a:color[1:2], a:color[3:4], a:color[5:6]], 'str2nr(v:val, 16)'), ';')
   endif
   return prefix.'5;'.a:color
@@ -188,25 +197,25 @@ function! s:ansi(str, group, default, ...)
 endfunction
 
 for s:color_name in keys(s:ansi)
-  execute "function! s:".s:color_name."(str, ...)\n"
-        \ "  return s:ansi(a:str, get(a:, 1, ''), '".s:color_name."')\n"
-        \ "endfunction"
+  execute 'function! s:'.s:color_name.'(str, ...)\n'
+        \ '  return s:ansi(a:str, get(a:, 1, ''''), '''.s:color_name.''')\n'
+        \ 'endfunction'
 endfor
 
 function! s:buflisted()
-  return filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&filetype") != "qf"')
+  return filter(range(1, bufnr('$')), 'buflisted(v:val) && getbufvar(v:val, "&filetype") !=? "qf"')
 endfunction
 
 function! s:fzf(name, opts, extra)
   let [extra, bang] = [{}, 0]
   if len(a:extra) <= 1
     let first = get(a:extra, 0, 0)
-    if type(first) == s:TYPE.dict
+    if type(first) ==? s:TYPE.dict
       let extra = first
     else
       let bang = first
     endif
-  elseif len(a:extra) == 2
+  elseif len(a:extra) ==? 2
     let [extra, bang] = a:extra
   else
     throw 'invalid number of arguments'
@@ -226,11 +235,11 @@ let s:default_action = {
 function! s:action_for(key, ...)
   let default = a:0 ? a:1 : ''
   let Cmd = get(get(g:, 'fzf_action', s:default_action), a:key, default)
-  return type(Cmd) == s:TYPE.string ? Cmd : default
+  return type(Cmd) ==? s:TYPE.string ? Cmd : default
 endfunction
 
 function! s:open(cmd, target)
-  if stridx('edit', a:cmd) == 0 && fnamemodify(a:target, ':p') ==# expand('%:p')
+  if stridx('edit', a:cmd) ==? 0 && fnamemodify(a:target, ':p') ==# expand('%:p')
     return
   endif
   execute a:cmd s:escape(a:target)
@@ -290,7 +299,7 @@ function! s:shortpath()
     let short = pathshorten(short)
   endif
   let slash = (s:is_win && !&shellslash) ? '\' : '/'
-  return empty(short) ? '~'.slash : short . (short =~ escape(slash, '\').'$' ? '' : slash)
+  return empty(short) ? '~'.slash : short . (short =~? escape(slash, '\').'$' ? '' : slash)
 endfunction
 
 function! fzf#vim#files(dir, ...)
@@ -339,13 +348,13 @@ function! fzf#vim#_lines(all)
   if display_bufnames
     let bufnames = {}
     for b in s:buflisted()
-      let bufnames[b] = pathshorten(fnamemodify(bufname(b), ":~:."))
+      let bufnames[b] = pathshorten(fnamemodify(bufname(b), ':~:.'))
       let longest_name = max([longest_name, len(bufnames[b])])
     endfor
   endif
   let len_bufnames = min([15, longest_name])
   for b in s:buflisted()
-    let lines = getbufline(b, 1, "$")
+    let lines = getbufline(b, 1, '$')
     if empty(lines)
       let path = fnamemodify(bufname(b), ':p')
       let lines = filereadable(path) ? readfile(path) : []
@@ -355,12 +364,12 @@ function! fzf#vim#_lines(all)
       if len(bufname) > len_bufnames + 1
         let bufname = '…' . bufname[-len_bufnames+1:]
       endif
-      let bufname = printf(s:green("%".len_bufnames."s", "Directory"), bufname)
+      let bufname = printf(s:green('%'.len_bufnames.'s', 'Directory'), bufname)
     else
       let bufname = ''
     endif
-    let linefmt = s:blue("%2d\t", "TabLine")."%s".s:yellow("\t%4d ", "LineNr")."\t%s"
-    call extend(b == buf ? cur : rest,
+    let linefmt = s:blue('%2d\t', 'TabLine').'%s'.s:yellow('\t%4d ', 'LineNr').'\t%s'
+    call extend(b ==? buf ? cur : rest,
     \ filter(
     \   map(lines,
     \       '(!a:all && empty(v:val)) ? "" : printf(linefmt, b, bufname, v:key + 1, v:val)'),
@@ -372,7 +381,7 @@ endfunction
 function! fzf#vim#lines(...)
   let [display_bufnames, lines] = fzf#vim#_lines(1)
   let nth = display_bufnames ? 3 : 2
-  let [query, args] = (a:0 && type(a:1) == type('')) ?
+  let [query, args] = (a:0 && type(a:1) ==? type('')) ?
         \ [a:1, a:000[1:]] : ['', a:000]
   return s:fzf('lines', {
   \ 'source':  lines,
@@ -407,17 +416,17 @@ function! s:buffer_line_handler(lines)
 endfunction
 
 function! s:buffer_lines(query)
-  let linefmt = s:yellow(" %4d ", "LineNr")."\t%s"
+  let linefmt = s:yellow(' %4d ', 'LineNr').'\t%s'
   let fmtexpr = 'printf(linefmt, v:key + 1, v:val)'
   let lines = getline(1, '$')
   if empty(a:query)
     return map(lines, fmtexpr)
   end
-  return filter(map(lines, 'v:val =~ a:query ? '.fmtexpr.' : ""'), 'len(v:val)')
+  return filter(map(lines, 'v:val =~? a:query ? '.fmtexpr.' : ""'), 'len(v:val)')
 endfunction
 
 function! fzf#vim#buffer_lines(...)
-  let [query, args] = (a:0 && type(a:1) == type('')) ?
+  let [query, args] = (a:0 && type(a:1) ==? type('')) ?
         \ [a:1, a:000[1:]] : ['', a:000]
   return s:fzf('blines', {
   \ 'source':  s:buffer_lines(query),
@@ -430,9 +439,9 @@ endfunction
 " Colors
 " ------------------------------------------------------------------
 function! fzf#vim#colors(...)
-  let colors = split(globpath(&rtp, "colors/*.vim"), "\n")
+  let colors = split(globpath(&runtimepath, 'colors/*.vim'), '\n')
   if has('packages')
-    let colors += split(globpath(&packpath, "pack/*/opt/*/colors/*.vim"), "\n")
+    let colors += split(globpath(&packpath, 'pack/*/opt/*/colors/*.vim'), '\n')
   endif
   return s:fzf('colors', {
   \ 'source':  fzf#vim#_uniq(map(colors, "substitute(fnamemodify(v:val, ':t'), '\\..\\{-}$', '', '')")),
@@ -482,15 +491,15 @@ function! s:history_sink(type, lines)
   let prefix = "\<plug>(-fzf-".a:type.')'
   let key  = a:lines[0]
   let item = matchstr(a:lines[1], ' *[0-9]\+ *\zs.*')
-  if key == 'ctrl-e'
+  if key ==? 'ctrl-e'
     call histadd(a:type, item)
     redraw
     call feedkeys(a:type."\<up>", 'n')
   else
-    if a:type == ':'
+    if a:type ==? ':'
       call histadd(a:type, item)
     endif
-    let g:__fzf_command = "normal ".prefix.item."\<cr>"
+    let g:__fzf_command = 'normal '.prefix.item.'\<cr>'
     call feedkeys("\<plug>(-fzf-vim-do)")
   endif
 endfunction
@@ -542,9 +551,9 @@ function! fzf#vim#SearchGitFilesOnPath(dir, args, ...)
   if empty(l:root)
     return s:warn('Not in git repo')
   endif
-  if a:args != '?'
+  if a:args !=? '?'
     return s:fzf(
-    \   'gfiles', 
+    \   'gfiles',
     \   {
     \       'source':
     \           'git -C "' . l:root . '" ls-files --recurse-submodules '
@@ -583,7 +592,7 @@ function! s:find_open_window(b)
     let buffers = tabpagebuflist(t)
     for w in range(1, len(buffers))
       let b = buffers[w - 1]
-      if b == a:b
+      if b ==? a:b
         return [t, w]
       endif
     endfor
@@ -617,13 +626,13 @@ endfunction
 
 function! s:format_buffer(b)
   let name = bufname(a:b)
-  let name = empty(name) ? '[No Name]' : fnamemodify(name, ":p:~:.")
-  let flag = a:b == bufnr('')  ? s:blue('%', 'Conditional') :
-          \ (a:b == bufnr('#') ? s:magenta('#', 'Special') : ' ')
+  let name = empty(name) ? '[No Name]' : fnamemodify(name, ':p:~:.')
+  let flag = a:b ==? bufnr('')  ? s:blue('%', 'Conditional') :
+          \ (a:b ==? bufnr('#') ? s:magenta('#', 'Special') : ' ')
   let modified = getbufvar(a:b, '&modified') ? s:red(' [+]', 'Exception') : ''
   let readonly = getbufvar(a:b, '&modifiable') ? '' : s:green(' [RO]', 'Constant')
   let extra = join(filter([modified, readonly], '!empty(v:val)'), '')
-  return s:strip(printf("[%s] %s\t%s\t%s", s:yellow(a:b, 'Number'), flag, name, extra))
+  return s:strip(printf('[%s] %s\t%s\t%s', s:yellow(a:b, 'Number'), flag, name, extra))
 endfunction
 
 function! s:sort_buffers(...)
@@ -637,7 +646,7 @@ function! s:buflisted_sorted()
 endfunction
 
 function! fzf#vim#buffers(...)
-  let [query, args] = (a:0 && type(a:1) == type('')) ?
+  let [query, args] = (a:0 && type(a:1) ==? type('')) ?
         \ [a:1, a:000[1:]] : ['', a:000]
   return s:fzf('buffers', {
   \ 'source':  map(s:buflisted_sorted(), 's:format_buffer(v:val)'),
@@ -652,7 +661,7 @@ endfunction
 function! s:ag_to_qf(line, with_column)
   let parts = split(a:line, ':')
   let text = join(parts[(a:with_column ? 3 : 2):], ':')
-  let dict = {'filename': &acd ? fnamemodify(parts[0], ':p') : parts[0], 'lnum': parts[1], 'text': text}
+  let dict = {'filename': &autochdir ? fnamemodify(parts[0], ':p') : parts[0], 'lnum': parts[1], 'text': text}
   if a:with_column
     let dict.col = parts[2]
   endif
@@ -686,12 +695,12 @@ endfunction
 
 " query, [[ag options], options]
 function! fzf#vim#ag(query, ...)
-  if type(a:query) != s:TYPE.string
+  if type(a:query) !=? s:TYPE.string
     return s:warn('Invalid query argument')
   endif
   let query = empty(a:query) ? '^(?=.)' : a:query
   let args = copy(a:000)
-  let ag_opts = len(args) > 1 && type(args[0]) == s:TYPE.string ? remove(args, 0) : ''
+  let ag_opts = len(args) > 1 && type(args[0]) ==? s:TYPE.string ? remove(args, 0) : ''
   let command = ag_opts . ' ' . fzf#shellescape(query)
   return call('fzf#vim#ag_raw', insert(args, command, 0))
 endfunction
@@ -776,10 +785,10 @@ function! fzf#vim#buffer_tags(query, ...)
   let escaped = fzf#shellescape(expand('%'))
   let null = s:is_win ? 'nul' : '/dev/null'
   let sort = has('unix') && !has('win32unix') && executable('sort') ? '| sort -s -k 5' : ''
-  let tag_cmds = (len(args) > 1 && type(args[0]) != type({})) ? remove(args, 0) : [
+  let tag_cmds = (len(args) > 1 && type(args[0]) !=? type({})) ? remove(args, 0) : [
     \ printf('ctags -f - --sort=yes --excmd=number --language-force=%s %s 2> %s %s', &filetype, escaped, null, sort),
     \ printf('ctags -f - --sort=yes --excmd=number %s 2> %s %s', escaped, null, sort)]
-  if type(tag_cmds) != type([])
+  if type(tag_cmds) !=? type([])
     let tag_cmds = [tag_cmds]
   endif
   try
@@ -803,14 +812,14 @@ function! s:tags_sink(lines)
   let qfl = []
   let cmd = s:action_for(a:lines[0], 'e')
   try
-    let [magic, &magic, wrapscan, &wrapscan, acd, &acd] = [&magic, 0, &wrapscan, 1, &acd, 0]
+    let [magic, &magic, wrapscan, &wrapscan, autochdir, &autochdir] = [&magic, 0, &wrapscan, 1, &autochdir, 0]
     for line in a:lines[1:]
       try
         let parts   = split(line, '\t\zs')
         let excmd   = matchstr(join(parts[2:-2], '')[:-2], '^.\{-}\ze;\?"\t')
         let base    = fnamemodify(parts[-1], ':h')
         let relpath = parts[1][:-2]
-        let abspath = relpath =~ (s:is_win ? '^[A-Z]:\' : '^/') ? relpath : join([base, relpath], '/')
+        let abspath = relpath =~? (s:is_win ? '^[A-Z]:\' : '^/') ? relpath : join([base, relpath], '/')
         call s:open(cmd, expand(abspath, 1))
         silent execute excmd
         call add(qfl, {'filename': expand('%'), 'lnum': line('.'), 'text': getline('.')})
@@ -821,7 +830,7 @@ function! s:tags_sink(lines)
       endtry
     endfor
   finally
-    let [&magic, &wrapscan, &acd] = [magic, wrapscan, acd]
+    let [&magic, &wrapscan, &autochdir] = [magic, wrapscan, autochdir]
   endtry
   call s:fill_quickfix(qfl, 'clast')
   normal! zz
@@ -905,7 +914,7 @@ function! s:command_sink(lines)
   endif
   let cmd = matchstr(a:lines[1], s:nbs.'\zs\S*\ze'.s:nbs)
   if empty(a:lines[0])
-    call feedkeys(':'.cmd.(a:lines[1][0] == '!' ? '' : ' '), 'n')
+    call feedkeys(':'.cmd.(a:lines[1][0] ==? '!' ? '' : ' '), 'n')
   else
     execute cmd
   endif
@@ -927,14 +936,14 @@ function! s:excmds()
   let commands = []
   let command = ''
   for line in readfile(help)
-    if line =~ '^|:[^|]'
+    if line =~? '^|:[^|]'
       if !empty(command)
         call add(commands, s:format_excmd(command))
       endif
       let command = line
-    elseif line =~ '^\s\+\S' && !empty(command)
+    elseif line =~? '^\s\+\S' && !empty(command)
       let command .= substitute(line, '^\s*', ' ', '')
-    elseif !empty(commands) && line =~ '^\s*$'
+    elseif !empty(commands) && line =~? '^\s*$'
       break
     endif
   endfor
@@ -990,9 +999,9 @@ endfunction
 " ------------------------------------------------------------------
 function! s:helptag_sink(line)
   let [tag, file, path] = split(a:line, "\t")[0:2]
-  let rtp = fnamemodify(path, ':p:h:h')
-  if stridx(&rtp, rtp) < 0
-    execute 'set rtp+='.s:escape(rtp)
+  let runtimepath = fnamemodify(path, ':p:h:h')
+  if stridx(&runtimepath, runtimepath) < 0
+    execute 'set runtimepath+='.s:escape(runtimepath)
   endif
   execute 'help' tag
 endfunction
@@ -1021,7 +1030,7 @@ endfunction
 " ------------------------------------------------------------------
 function! fzf#vim#filetypes(...)
   return s:fzf('filetypes', {
-  \ 'source':  fzf#vim#_uniq(sort(map(split(globpath(&rtp, 'syntax/*.vim'), '\n'),
+  \ 'source':  fzf#vim#_uniq(sort(map(split(globpath(&runtimepath, 'syntax/*.vim'), '\n'),
   \            'fnamemodify(v:val, ":t:r")'))),
   \ 'sink':    'setf',
   \ 'options': '+m --prompt="File types> "'
@@ -1035,7 +1044,7 @@ function! s:format_win(tab, win, buf)
   let modified = getbufvar(a:buf, '&modified')
   let name = bufname(a:buf)
   let name = empty(name) ? '[No Name]' : name
-  let active = tabpagewinnr(a:tab) == a:win
+  let active = tabpagewinnr(a:tab) ==? a:win
   return (active? s:blue('> ', 'Operator') : '  ') . name . (modified? s:red(' [+]', 'Exception') : '')
 endfunction
 
@@ -1078,12 +1087,12 @@ function! s:commits_sink(lines)
 
   let pat = '[0-9a-f]\{7,9}'
 
-  if a:lines[0] == 'ctrl-y'
+  if a:lines[0] ==? 'ctrl-y'
     let hashes = join(filter(map(a:lines[1:], 'matchstr(v:val, pat)'), 'len(v:val)'))
     return s:yank_to_register(hashes)
   end
 
-  let diff = a:lines[0] == 'ctrl-d'
+  let diff = a:lines[0] ==? 'ctrl-d'
   let cmd = s:action_for(a:lines[0], 'e')
   let buf = bufnr('')
   for idx in range(1, len(a:lines) - 1)
@@ -1096,7 +1105,7 @@ function! s:commits_sink(lines)
         execute 'Gdiff' sha
       else
         " Since fugitive buffers are unlisted, we can't keep using 'e'
-        let c = (cmd == 'e' && idx > 1) ? 'tab split' : cmd
+        let c = (cmd ==? 'e' && idx > 1) ? 'tab split' : cmd
         execute c FugitiveFind(sha)
       endif
     endif
@@ -1189,10 +1198,10 @@ function! s:key_sink(line)
 endfunction
 
 function! fzf#vim#maps(mode, ...)
-  let s:map_gv  = a:mode == 'x' ? 'gv' : ''
-  let s:map_cnt = v:count == 0 ? '' : v:count
+  let s:map_gv  = a:mode ==? 'x' ? 'gv' : ''
+  let s:map_cnt = v:count ==? 0 ? '' : v:count
   let s:map_reg = empty(v:register) ? '' : ('"'.v:register)
-  let s:map_op  = a:mode == 'o' ? v:operator : ''
+  let s:map_op  = a:mode ==? 'o' ? v:operator : ''
 
   redir => cout
   silent execute 'verbose' a:mode.'map'
@@ -1200,7 +1209,7 @@ function! fzf#vim#maps(mode, ...)
   let list = []
   let curr = ''
   for line in split(cout, "\n")
-    if line =~ "^\t"
+    if line =~? "^\t"
       let src = '  '.join(reverse(reverse(split(split(line)[-1], '/'))[0:2]), '/')
       call add(list, printf('%s %s', curr, s:green(src, 'Comment')))
       let curr = ''
@@ -1214,7 +1223,7 @@ function! fzf#vim#maps(mode, ...)
   let aligned = s:align_pairs(list)
   let sorted  = sort(aligned)
   let colored = map(sorted, 's:highlight_keys(v:val)')
-  let pcolor  = a:mode == 'x' ? 9 : a:mode == 'o' ? 10 : 12
+  let pcolor  = a:mode ==? 'x' ? 9 : a:mode ==? 'o' ? 10 : 12
   return s:fzf('maps', {
   \ 'source':  colored,
   \ 'sink':    s:function('s:key_sink'),
@@ -1249,17 +1258,17 @@ function! s:complete_insert(lines)
   endif
 
   let chars = strchars(s:query)
-  if     chars == 0 | let del = ''
-  elseif chars == 1 | let del = '"_x'
+  if     chars ==? 0 | let del = ''
+  elseif chars ==? 1 | let del = '"_x'
   else              | let del = (chars - 1).'"_dvh'
   endif
 
   let data = call(s:reducer, [a:lines])
-  let ve = &ve
-  set ve=
+  let virtualedit = &virtualedit
+  set virtualedit=
   execute 'normal!' ((s:eol || empty(chars)) ? '' : 'h').del.(s:eol ? 'a': 'i').data
-  let &ve = ve
-  if mode() =~ 't'
+  let &virtualedit = virtualedit
+  if mode() =~? 't'
     call feedkeys('a', 'n')
   else
     execute "normal! \<esc>la"
@@ -1267,7 +1276,7 @@ function! s:complete_insert(lines)
 endfunction
 
 function! s:eval(dict, key, arg)
-  if has_key(a:dict, a:key) && type(a:dict[a:key]) == s:TYPE.funcref
+  if has_key(a:dict, a:key) && type(a:dict[a:key]) ==? s:TYPE.funcref
     let ret = copy(a:dict)
     let ret[a:key] = call(a:dict[a:key], [a:arg])
     return ret
@@ -1276,11 +1285,11 @@ function! s:eval(dict, key, arg)
 endfunction
 
 function! fzf#vim#complete(...)
-  if a:0 == 0
+  if a:0 ==? 0
     let s:opts = fzf#wrap()
-  elseif type(a:1) == s:TYPE.dict
+  elseif type(a:1) ==? s:TYPE.dict
     let s:opts = copy(a:1)
-  elseif type(a:1) == s:TYPE.string
+  elseif type(a:1) ==? s:TYPE.string
     let s:opts = extend({'source': a:1}, get(a:000, 1, fzf#wrap()))
   else
     echoerr 'Invalid argument: '.string(a:000)
@@ -1293,17 +1302,17 @@ function! fzf#vim#complete(...)
   endfor
 
   let eol = col('$')
-  let ve = &ve
-  set ve=all
-  let s:eol = col('.') == eol
-  let &ve = ve
+  let virtualedit = &virtualedit
+  set virtualedit=all
+  let s:eol = col('.') ==? eol
+  let &virtualedit = virtualedit
 
   let Prefix = s:pluck(s:opts, 'prefix', '\k*$')
-  if col('.') == 1
+  if col('.') ==? 1
     let s:query = ''
   else
     let full_prefix = getline('.')[0 : col('.')-2]
-    if type(Prefix) == s:TYPE.funcref
+    if type(Prefix) ==? s:TYPE.funcref
       let s:query = call(Prefix, [full_prefix])
     else
       let s:query = matchstr(full_prefix, Prefix)
@@ -1316,7 +1325,7 @@ function! fzf#vim#complete(...)
     call s:merge_opts(s:opts, remove(s:opts, 'extra_options'))
   endif
   if has_key(s:opts, 'options')
-    if type(s:opts.options) == s:TYPE.list
+    if type(s:opts.options) ==? s:TYPE.list
       call add(s:opts.options, '--no-expect')
     else
       let s:opts.options .= ' --no-expect'
@@ -1340,7 +1349,7 @@ function! fzf#vim#getGitRoot(dir)
 endfunction
 
 function! fzf#vim#gitGetSuperprojectWorkingTree(dir)
-    let l:root = systemlist('git -C ' . a:dir . ' rev-parse ' 
+    let l:root = systemlist('git -C ' . a:dir . ' rev-parse '
     \ . '--show-superproject-working-tree')
 
     if v:shell_error || empty(l:root)
@@ -1367,7 +1376,7 @@ function! fzf#vim#smart(...)
         let l:dir = getcwd()
     endif
 
-    if l:bang 
+    if l:bang
         let l:superproject_root = fzf#vim#gitGetSuperprojectWorkingTree(l:dir)
         if !empty(l:superproject_root)
             " return fzf#vim#SearchGitFilesOnPath(l:superproject_root, '', a:)
@@ -1385,6 +1394,6 @@ function! fzf#vim#smart(...)
 endfunction
 
 " ------------------------------------------------------------------
-let &cpo = s:cpo_save
+let &cpoptions = s:cpo_save
 unlet s:cpo_save
 

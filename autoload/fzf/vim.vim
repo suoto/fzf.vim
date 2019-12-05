@@ -197,8 +197,8 @@ function! s:ansi(str, group, default, ...)
 endfunction
 
 for s:color_name in keys(s:ansi)
-  execute 'function! s:'.s:color_name.'(str, ...)\n'
-        \ '  return s:ansi(a:str, get(a:, 1, ''''), '''.s:color_name.''')\n'
+  execute 'function! s:'.s:color_name.'(str, ...)' . "\n"
+        \ '  return s:ansi(a:str, get(a:, 1, ''''), '''.s:color_name.''')' . "\n"
         \ 'endfunction'
 endfor
 
